@@ -30,6 +30,13 @@ func main() {
 	PrintFatalError(err, "Error creating the unprocessed file")
 	defer unprocessedFile.Close()
 
+	processFile(originFile, destinyFile, errorFile)
+
+	fmt.Println("END File processor")
+
+}
+
+func processFile(originFile, destinyFile, errorFile *os.File) {
 	scanner := bufio.NewScanner(originFile)
 	count := 0
 	for scanner.Scan() {
@@ -40,9 +47,6 @@ func main() {
 			PrintFatalError(err, "Error writing the error of processing the line "+string(count))
 		}
 	}
-
-	fmt.Println("END File processor")
-
 }
 
 //PrintFatalError Utility to print an error with a message with a log fatal (it exits the program)
