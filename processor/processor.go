@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type fileInfo struct {
@@ -44,7 +45,9 @@ func main() {
 
 	fileInfos := processFile(originFile, errorFile)
 
-	processResult(destinyFile, errorFile, fileInfos)
+	fileInfoResults := processResult(destinyFile, errorFile, fileInfos)
+
+	writeResults(destinyFile, errorFile, fileInfoResults)
 
 	fmt.Println("END File processor")
 
@@ -73,22 +76,45 @@ func processFile(originFile, errorFile *os.File) []fileInfo {
 			PrintFatalError(err, fmt.Sprintf("Error at processing file. Error writing the error of processing the line %d", count))
 		}
 		fileInfo := fileInfo{record[0], seq}
+		fmt.Printf("FileInfo processes %d: %v\n", count, fileInfo)
 		fileInfos = append(fileInfos, fileInfo)
 	}
 	fmt.Printf("Processed from file: %d\n", len(fileInfos))
 	return fileInfos
 }
 
-func processResult(destinyFile, errorFile *os.File, fileInfos []fileInfo) {
-	w := csv.NewWriter(destinyFile)
+func processResult(destinyFile, errorFile *os.File, fileInfos []fileInfo) []fileInfoResult {
+
+	fileInfoResults := []fileInfoResult{}
 
 	count := 0
 	for _, fileInfo := range fileInfos {
 		count++
-		record := []string{fileInfo.id, strconv.Itoa(fileInfo.seq)}
+		fileInfoResult := fileInfoResult{fileInfo.id, []int{fileInfo.seq}}
+		fileInfoResults = append(fileInfoResults, fileInfoResult)
+		fmt.Printf("FileInfoResult created %d: %v\n", count, fileInfoResult)
+	}
+
+	fmt.Printf("Processed to file: %d\n", count)
+	return fileInfoResults
+}
+
+func writeResults(destinyFile, errorFile *os.File, fileInfoResults []fileInfoResult) {
+	w := csv.NewWriter(destinyFile)
+	w.Comma = ';'
+
+	count := 0
+	for _, fileInfoResult := range fileInfoResults {
+		count++
+		textSqs := []string{}
+		for i := range fileInfoResult.seqs {
+			textSqs = append(textSqs, strconv.Itoa(fileInfoResult.seqs[i]))
+		}
+		record := []string{fileInfoResult.id, strings.Join(textSqs, ",")}
+		fmt.Printf("FileInfoResult processed %d: %v\n", count, record)
 		if err := w.Write(record); err != nil {
 			_, err := errorFile.WriteString(fmt.Sprintf("Error at line %d: %v", count, err))
-			PrintFatalError(err, fmt.Sprintf("Error at processing resultfile. Error writing the error of processing the line %d", count))
+			PrintFatalError(err, fmt.Sprintf("Error at writting resultfile. Error writing the error of processing the line %d", count))
 		}
 	}
 
@@ -99,7 +125,6 @@ func processResult(destinyFile, errorFile *os.File, fileInfos []fileInfo) {
 		PrintFatalError(err, fmt.Sprintf("Error at processing resultfile. Error writing the error of processing the line %d", count))
 	}
 
-	fmt.Printf("Processed to file: %d\n", count)
 }
 
 //PrintFatalError Utility to print an error with a message with a log fatal (it exits the program)
