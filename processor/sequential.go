@@ -1,10 +1,9 @@
-package main
+package processor
 
 import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -20,34 +19,12 @@ type fileInfoResult struct {
 	seqs []int
 }
 
-func main() {
-	fmt.Println("File processor")
-
-	if len(os.Args) != 5 {
-		log.Fatalln("Usage: processor originFile destinyFile errorFile unprocessedFile")
-	}
-
-	originFile, err := os.Open(os.Args[1])
-	PrintFatalError(err, "Error opening the from file")
-	defer originFile.Close()
-
-	destinyFile, err := os.Create(os.Args[2])
-	PrintFatalError(err, "Error creating the destiny file")
-	defer destinyFile.Close()
-
-	errorFile, err := os.Create(os.Args[3])
-	PrintFatalError(err, "Error creating the error file")
-	defer errorFile.Close()
-
-	unprocessedFile, err := os.Create(os.Args[4])
-	PrintFatalError(err, "Error creating the unprocessed file")
-	defer unprocessedFile.Close()
+//ProcessSequential Process the file sequentially
+func ProcessSequential(originFile, destinyFile, errorFile *os.File) {
 
 	fileInfos := readFile(originFile, errorFile)
 	fileInfoResults := processInfo(destinyFile, errorFile, fileInfos)
 	writeResults(destinyFile, errorFile, fileInfoResults)
-
-	fmt.Println("END File processor")
 
 }
 
@@ -144,14 +121,6 @@ func writeResults(destinyFile, errorFile *os.File, fileInfoResults []fileInfoRes
 	if err := w.Error(); err != nil {
 		_, err := errorFile.WriteString(fmt.Sprintf("Error with CSV %v", err))
 		PrintFatalError(err, fmt.Sprintf("Error at processing resultfile. Error writing the error of processing the line %d", count))
-	}
-
-}
-
-//PrintFatalError Utility to print an error with a message with a log fatal (it exits the program)
-func PrintFatalError(err error, msg string) {
-	if err != nil {
-		log.Fatalln(msg, err)
 	}
 
 }
